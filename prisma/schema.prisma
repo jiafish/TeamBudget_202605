@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  loginNumber       String   @unique
+  passwordHash      String
+  role              String   @default("MEMBER")
+  name              String
+  monthlyAllocation Int      @default(0)
+  balance           Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  expenses              ExpenseRecord[]
+  monthlyAllocationLogs MonthlyAllocationLog[]
+  reimbursementTargets  ReimbursementDecision[] @relation("ReimbursementTarget")
+  reimbursementAsManager ReimbursementDecision[] @relation("ReimbursementManager")
+}
+
+model ReimbursementDecision {
+  id            Int      @id @default(autoincrement())
+  targetUserId  Int
+  managerUserId Int
+  reimbursed    Boolean
+  creditAmount  Int
+  note          String?
+  createdAt     DateTime @default(now())
+
+  target  User @relation("ReimbursementTarget", fields: [targetUserId], references: [id])
+  manager User @relation("ReimbursementManager", fields: [managerUserId], references: [id])
+}
+
+model ExpenseRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  amount      Int
+  date        DateTime
+  description String
+  receiptPath String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model MonthlyAllocationLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Int
+  month     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month])
+}

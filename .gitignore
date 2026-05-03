@@ -1,0 +1,12 @@
+.spectra/
+openspec/.vector-search.db*
+node_modules/
+.next/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+uploads/
+.env
+.env.local
+prisma/migrations/*.db
