@@ -1,7 +1,9 @@
+.gh-pages-stash/
 .spectra/
 openspec/.vector-search.db*
 node_modules/
 .next/
+out/
 *.db
 *.db-journal
 *.db-wal
