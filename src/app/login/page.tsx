@@ -1,14 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const isStaticExport = process.env.NEXT_PUBLIC_STATIC_EXPORT === "1";
   const [loginNumber, setLoginNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isStaticExport) {
+      router.replace("/admin/overview");
+    }
+  }, [isStaticExport, router]);
+
+  if (isStaticExport) {
+    return null;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -90,6 +90,14 @@ const TAB_LABELS: Record<OverviewTab, string> = {
 };
 
 export default function AdminOverviewPage() {
+  if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "1") {
+    return <StaticAdminOverviewPage />;
+  }
+
+  return <AdminOverviewRuntimePage />;
+}
+
+function AdminOverviewRuntimePage() {
   const router = useRouter();
   const manualSupplementRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<OverviewTab>("monthly");
@@ -959,6 +967,73 @@ export default function AdminOverviewPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function StaticAdminOverviewPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader />
+      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h1 className="text-2xl font-bold text-gray-800">管理員總覽（靜態展示）</h1>
+          <p className="text-sm text-gray-600 mt-2">
+            GitHub Pages 為純靜態環境，以下資料為示意內容。完整登入、核銷與資料庫功能請使用 Vercel 或 VPS 版。
+          </p>
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-xs text-gray-500">每月分配總額</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">$120,000</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-xs text-gray-500">本月支出總額</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">$37,800</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-xs text-gray-500">團隊可用餘額</p>
+            <p className="text-2xl font-bold text-gray-800 mt-1">$82,200</p>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">成員概況（示意）</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="py-2 pr-4">成員</th>
+                  <th className="py-2 pr-4">月配額</th>
+                  <th className="py-2 pr-4">累計支出</th>
+                  <th className="py-2 pr-4">當前餘額</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-700">
+                <tr className="border-b">
+                  <td className="py-2 pr-4">王小明</td>
+                  <td className="py-2 pr-4">$30,000</td>
+                  <td className="py-2 pr-4">$9,800</td>
+                  <td className="py-2 pr-4">$20,200</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2 pr-4">陳小華</td>
+                  <td className="py-2 pr-4">$30,000</td>
+                  <td className="py-2 pr-4">$12,000</td>
+                  <td className="py-2 pr-4">$18,000</td>
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4">林小美</td>
+                  <td className="py-2 pr-4">$30,000</td>
+                  <td className="py-2 pr-4">$16,000</td>
+                  <td className="py-2 pr-4">$14,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
