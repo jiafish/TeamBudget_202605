@@ -10,6 +10,41 @@ interface ExpenseRecord {
   date: string;
   description: string;
   receiptPath: string | null;
+  category: { id: number; name: string } | null;
+}
+
+interface LastAllocationSetting {
+  requestedBackfillFromMonth: string | null;
+  requestedBackfillToMonth: string | null;
+  effectiveBackfillFromMonth: string | null;
+  effectiveBackfillToMonth: string | null;
+  monthlyAllocationAfter: number;
+  backfilledMonthsCount: number;
+  createdAt: string;
+  managerName: string;
+}
+
+interface BudgetSummary {
+  monthlyAllocation: number;
+  totalAllocatedFromLogs: number;
+  totalSupplementCreditsReimbursed?: number;
+  totalAllocationAndSupplements?: number;
+  totalExpenseAllTime: number;
+  availableAfterAllocationsAndSupplements?: number;
+  availableFromAllocations: number;
+  lastAllocationSetting?: LastAllocationSetting | null;
+}
+
+interface ReimbursementRow {
+  id: number;
+  targetUserId: number;
+  targetName: string;
+  managerUserId: number;
+  managerName: string;
+  reimbursed: boolean;
+  creditAmount: number;
+  note: string | null;
+  createdAt: string;
 }
 
 function currentMonth() {
@@ -19,13 +54,15 @@ function currentMonth() {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [balance, setBalance] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [month, setMonth] = useState(currentMonth());
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [reimbursements, setReimbursements] = useState<ReimbursementRow[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   const fetchMe = useCallback(async () => {
     const res = await fetch("/api/auth/me");
@@ -35,9 +72,32 @@ export default function DashboardPage() {
     }
     if (res.ok) {
       const me = await res.json();
-      setBalance(me.balance);
       setName(me.name);
     }
+  }, [router]);
+
+  const fetchBudgetAndReimbursements = useCallback(async () => {
+    setSummaryLoading(true);
+    const [sumRes, reimbRes] = await Promise.all([
+      fetch("/api/member/budget-summary"),
+      fetch("/api/member/reimbursements"),
+    ]);
+    if (sumRes.status === 401 || reimbRes.status === 401) {
+      router.push("/login");
+      setSummaryLoading(false);
+      return;
+    }
+    if (sumRes.ok) {
+      setBudgetSummary(await sumRes.json());
+    } else {
+      setBudgetSummary(null);
+    }
+    if (reimbRes.ok) {
+      setReimbursements(await reimbRes.json());
+    } else {
+      setReimbursements([]);
+    }
+    setSummaryLoading(false);
   }, [router]);
 
   const fetchRecords = useCallback(async () => {
@@ -48,7 +108,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchMe();
-  }, [fetchMe]);
+    fetchBudgetAndReimbursements();
+  }, [fetchMe, fetchBudgetAndReimbursements]);
 
   useEffect(() => {
     setLoading(true);
@@ -86,16 +147,132 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-6">
-        {/* Balance card */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <p className="text-sm text-gray-500 mb-1">目前餘額</p>
-          <p
-            className={`text-4xl font-bold ${
-              balance !== null && balance < 0 ? "text-red-500" : "text-gray-800"
-            }`}
-          >
-            {balance !== null ? `$${balance.toLocaleString()}` : "—"}
+          <h2 className="text-base font-semibold text-gray-700 mb-1">預算摘要</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            「月分配金額（每月額度）」為每月發放之設定額；「分配經費＋補發加總」＝月配實際入帳加總加上已入帳之補發金額；可用餘額＝該加總 −
+            全期總支出。
           </p>
+          {summaryLoading ? (
+            <p className="text-gray-400 text-sm">載入中...</p>
+          ) : budgetSummary ? (
+            <>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-gray-500">月分配金額（每月額度）</dt>
+                  <dd className="text-lg font-semibold text-gray-800">
+                    ${budgetSummary.monthlyAllocation.toLocaleString()}
+                  </dd>
+                  <dd className="text-xs text-gray-400 mt-1">
+                    與管理者端相同：此欄為每月發放額度，非歷月已入帳加總。
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">分配經費＋補發加總</dt>
+                  <dd className="text-lg font-semibold text-gray-800">
+                    $
+                    {(
+                      budgetSummary.totalAllocationAndSupplements ??
+                      budgetSummary.totalAllocatedFromLogs
+                    ).toLocaleString()}
+                  </dd>
+                  <dd className="text-xs text-gray-400 mt-1">
+                    月配入帳 $
+                    {budgetSummary.totalAllocatedFromLogs.toLocaleString()}
+                    ／補發入帳 $
+                    {(budgetSummary.totalSupplementCreditsReimbursed ?? 0).toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">總支出</dt>
+                  <dd className="text-lg font-semibold text-gray-800">
+                    ${budgetSummary.totalExpenseAllTime.toLocaleString()}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">可用餘額</dt>
+                  <dd
+                    className={`text-lg font-semibold ${
+                      (budgetSummary.availableAfterAllocationsAndSupplements ??
+                        budgetSummary.availableFromAllocations) < 0
+                        ? "text-red-500"
+                        : "text-gray-800"
+                    }`}
+                  >
+                    $
+                    {(
+                      budgetSummary.availableAfterAllocationsAndSupplements ??
+                      budgetSummary.availableFromAllocations
+                    ).toLocaleString()}
+                  </dd>
+                </div>
+              </dl>
+              {budgetSummary.lastAllocationSetting && (
+                <p className="text-xs text-gray-500 mt-4 border-t border-gray-100 pt-3">
+                  最近一次管理者儲存紀錄（{budgetSummary.lastAllocationSetting.managerName}，「
+                  {new Date(
+                    budgetSummary.lastAllocationSetting.createdAt
+                  ).toLocaleString("zh-TW")}
+                  」）：請求區間{" "}
+                  {budgetSummary.lastAllocationSetting.requestedBackfillFromMonth ??
+                    "—"}
+                  ～
+                  {budgetSummary.lastAllocationSetting.requestedBackfillToMonth ??
+                    "—"}
+                  ；實際補帳區間{" "}
+                  {budgetSummary.lastAllocationSetting.effectiveBackfillFromMonth ??
+                    "—"}
+                  ～
+                  {budgetSummary.lastAllocationSetting.effectiveBackfillToMonth ??
+                    "—"}
+                  （當次補入 {budgetSummary.lastAllocationSetting.backfilledMonthsCount}{" "}
+                  個月）
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-400 text-sm">無法載入摘要</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-700 mb-3">核銷／補發紀錄</h2>
+          {summaryLoading ? (
+            <p className="text-gray-400 text-sm">載入中...</p>
+          ) : reimbursements.length === 0 ? (
+            <p className="text-gray-400 text-sm">尚無紀錄</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 border-b">
+                    <th className="pb-2">時間</th>
+                    <th className="pb-2">成員</th>
+                    <th className="pb-2">操作者</th>
+                    <th className="pb-2">補發</th>
+                    <th className="pb-2">金額</th>
+                    <th className="pb-2">備註</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reimbursements.map((r) => (
+                    <tr key={r.id} className="border-b last:border-0">
+                      <td className="py-2 whitespace-nowrap">
+                        {new Date(r.createdAt).toLocaleString("zh-TW")}
+                      </td>
+                      <td className="py-2">{r.targetName}</td>
+                      <td className="py-2">{r.managerName}</td>
+                      <td className="py-2">{r.reimbursed ? "是" : "否"}</td>
+                      <td className="py-2">${r.creditAmount.toLocaleString()}</td>
+                      <td className="py-2 text-gray-600 max-w-[12rem] truncate">
+                        {r.note ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Expense form */}
@@ -104,9 +281,9 @@ export default function DashboardPage() {
             登錄支出
           </h2>
           <ExpenseForm
-            onSuccess={(newBalance) => {
-              setBalance(newBalance);
+            onSuccess={() => {
               fetchRecords();
+              fetchBudgetAndReimbursements();
             }}
           />
         </div>
@@ -135,6 +312,7 @@ export default function DashboardPage() {
                     <th className="pb-2">日期</th>
                     <th className="pb-2">金額</th>
                     <th className="pb-2">說明</th>
+                    <th className="pb-2">類別</th>
                     <th className="pb-2">收據</th>
                   </tr>
                 </thead>
@@ -146,6 +324,15 @@ export default function DashboardPage() {
                       </td>
                       <td className="py-2">${r.amount.toLocaleString()}</td>
                       <td className="py-2">{r.description}</td>
+                      <td className="py-2">
+                        {r.category ? (
+                          <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                            {r.category.name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
                       <td className="py-2">
                         {r.receiptPath ? (
                           <button

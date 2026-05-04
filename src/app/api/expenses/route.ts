@@ -57,6 +57,8 @@ export async function GET(req: NextRequest) {
       date: true,
       description: true,
       receiptPath: true,
+      categoryId: true,
+      category: { select: { id: true, name: true } },
       createdAt: true,
     },
   });
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
   let date: Date;
   let description: string;
   let receiptPath: string | null = null;
+  let categoryId: number | null = null;
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
@@ -82,6 +85,10 @@ export async function POST(req: NextRequest) {
     const dateStr = String(formData.get("date") ?? "");
     description = String(formData.get("description") ?? "").trim();
     date = new Date(dateStr);
+    const catRaw = formData.get("categoryId");
+    if (catRaw && String(catRaw).trim() !== "") {
+      categoryId = parseInt(String(catRaw));
+    }
 
     const file = formData.get("receipt") as File | null;
     if (file && file.size > 0) {
@@ -110,6 +117,9 @@ export async function POST(req: NextRequest) {
     amount = Number(body?.amount);
     description = String(body?.description ?? "").trim();
     date = new Date(String(body?.date ?? ""));
+    if (body?.categoryId != null && body.categoryId !== "") {
+      categoryId = parseInt(String(body.categoryId));
+    }
   }
 
   if (!Number.isInteger(amount) || amount <= 0) {
@@ -125,6 +135,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "日期格式無效" }, { status: 400 });
   }
 
+  if (categoryId !== null) {
+    if (isNaN(categoryId)) {
+      return NextResponse.json({ error: "無效的類別 ID" }, { status: 400 });
+    }
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) {
+      return NextResponse.json({ error: "類別不存在" }, { status: 400 });
+    }
+  }
+
   // Atomic: create record + decrement balance
   const [record] = await prisma.$transaction([
     prisma.expenseRecord.create({
@@ -134,7 +154,9 @@ export async function POST(req: NextRequest) {
         date,
         description,
         receiptPath,
+        categoryId,
       },
+      include: { category: { select: { id: true, name: true } } },
     }),
     prisma.user.update({
       where: { id: session.userId },

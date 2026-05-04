@@ -1,6 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 interface ExpenseFormProps {
   onSuccess: (newBalance: number) => void;
@@ -12,8 +17,17 @@ export default function ExpenseForm({ onSuccess }: ExpenseFormProps) {
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState("");
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [categoryId, setCategoryId] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setCategories)
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +45,7 @@ export default function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     formData.append("amount", String(amountNum));
     formData.append("date", date);
     formData.append("description", description);
+    if (categoryId) formData.append("categoryId", categoryId);
     if (receipt) formData.append("receipt", receipt);
 
     const res = await fetch("/api/expenses", {
@@ -57,6 +72,7 @@ export default function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     setDate(today);
     setDescription("");
     setReceipt(null);
+    setCategoryId("");
     const fileInput = document.getElementById("receipt-input") as HTMLInputElement;
     if (fileInput) fileInput.value = "";
   }
@@ -104,6 +120,23 @@ export default function ExpenseForm({ onSuccess }: ExpenseFormProps) {
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           placeholder="請輸入用途說明"
         />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          類別（選填）
+        </label>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">不選</option>
+          {categories.map((c) => (
+            <option key={c.id} value={String(c.id)}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">

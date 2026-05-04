@@ -22,10 +22,28 @@ export async function GET(req: NextRequest) {
   const start = new Date(year, mon - 1, 1);
   const end = new Date(year, mon, 1);
 
+  // categoryId filter: omitted = all, "null" = uncategorized, integer = specific category
+  const categoryParam = searchParams.get("categoryId");
+  let categoryFilter: { categoryId: number | null } | undefined;
+  if (categoryParam !== null) {
+    if (categoryParam === "null") {
+      categoryFilter = { categoryId: null };
+    } else {
+      const parsed = parseInt(categoryParam);
+      if (!isNaN(parsed)) categoryFilter = { categoryId: parsed };
+    }
+  }
+
   const records = await prisma.expenseRecord.findMany({
-    where: { date: { gte: start, lt: end } },
+    where: {
+      date: { gte: start, lt: end },
+      ...categoryFilter,
+    },
     orderBy: { date: "desc" },
-    include: { user: { select: { name: true } } },
+    include: {
+      user: { select: { name: true } },
+      category: { select: { id: true, name: true } },
+    },
   });
 
   // Aggregate: total for the month and per-member subtotals
@@ -45,6 +63,8 @@ export async function GET(req: NextRequest) {
     date: r.date,
     description: r.description,
     receiptPath: r.receiptPath,
+    categoryId: r.categoryId,
+    category: r.category,
     createdAt: r.createdAt,
   }));
 

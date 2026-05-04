@@ -21,6 +21,26 @@ model User {
   monthlyAllocationLogs MonthlyAllocationLog[]
   reimbursementTargets  ReimbursementDecision[] @relation("ReimbursementTarget")
   reimbursementAsManager ReimbursementDecision[] @relation("ReimbursementManager")
+  allocationSettingsAsMember MemberAllocationSettingLog[] @relation("AllocationSettingMember")
+  allocationSettingsAsManager MemberAllocationSettingLog[] @relation("AllocationSettingManager")
+}
+
+model MemberAllocationSettingLog {
+  id                           Int      @id @default(autoincrement())
+  memberUserId                 Int
+  managerUserId                Int
+  monthlyAllocationAfter       Int
+  requestedBackfillFromMonth   String?
+  requestedBackfillToMonth     String?
+  effectiveBackfillFromMonth   String?
+  effectiveBackfillToMonth     String?
+  backfilledMonthsCount        Int      @default(0)
+  createdAt                    DateTime @default(now())
+
+  member  User @relation("AllocationSettingMember", fields: [memberUserId], references: [id])
+  manager User @relation("AllocationSettingManager", fields: [managerUserId], references: [id])
+
+  @@index([memberUserId, createdAt])
 }
 
 model ReimbursementDecision {
@@ -36,6 +56,14 @@ model ReimbursementDecision {
   manager User @relation("ReimbursementManager", fields: [managerUserId], references: [id])
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  expenses ExpenseRecord[]
+}
+
 model ExpenseRecord {
   id          Int      @id @default(autoincrement())
   userId      Int
@@ -43,9 +71,11 @@ model ExpenseRecord {
   date        DateTime
   description String
   receiptPath String?
+  categoryId  Int?
   createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
 }
 
 model MonthlyAllocationLog {

@@ -12,6 +12,11 @@ interface Member {
   balance: number;
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +28,9 @@ export default function MembersPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetError, setResetError] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryError, setCategoryError] = useState("");
 
   const fetchMembers = useCallback(async () => {
     const res = await fetch("/api/admin/members");
@@ -30,9 +38,18 @@ export default function MembersPage() {
     setLoading(false);
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    const res = await fetch("/api/admin/categories");
+    if (res.ok) setCategories(await res.json());
+  }, []);
+
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -77,6 +94,36 @@ export default function MembersPage() {
       setResetTargetId(null);
       setResetSuccess("");
     }, 1500);
+  }
+
+  async function handleCreateCategory(e: React.FormEvent) {
+    e.preventDefault();
+    setCategoryError("");
+    const name = newCategoryName.trim();
+    if (!name) return;
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (res.ok) {
+      setNewCategoryName("");
+      fetchCategories();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setCategoryError(d.error ?? "新增失敗");
+    }
+  }
+
+  async function handleDeleteCategory(id: number) {
+    setCategoryError("");
+    const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      fetchCategories();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setCategoryError(d.error ?? "刪除失敗");
+    }
   }
 
   if (loading) return <div className="p-8 text-gray-500">載入中...</div>;
@@ -126,7 +173,7 @@ export default function MembersPage() {
       </section>
 
       {/* Member list */}
-      <section className="bg-white rounded-2xl shadow-sm p-6">
+      <section className="bg-white rounded-2xl shadow-sm p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">成員列表</h2>
         {members.length === 0 ? (
           <p className="text-gray-400 text-sm">尚無成員</p>
@@ -172,6 +219,51 @@ export default function MembersPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      {/* Category management */}
+      <section className="bg-white rounded-2xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-700 mb-4">支出類別管理</h2>
+        <form onSubmit={handleCreateCategory} className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="新類別名稱"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            新增
+          </button>
+        </form>
+        {categoryError && (
+          <p className="text-red-500 text-sm mb-3">{categoryError}</p>
+        )}
+        {categories.length === 0 ? (
+          <p className="text-gray-400 text-sm">尚無類別，請先新增</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full"
+              >
+                {c.name}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCategory(c.id)}
+                  className="text-gray-400 hover:text-red-500 text-xs leading-none"
+                  title="刪除類別"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
         )}
       </section>
 
