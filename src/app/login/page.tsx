@@ -6,10 +6,22 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const isStaticExport = process.env.NEXT_PUBLIC_STATIC_EXPORT === "1";
+  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [loginNumber, setLoginNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function handleDemoLogin() {
+    setLoading(true);
+    const res = await fetch("/api/auth/demo-login", { method: "POST" });
+    setLoading(false);
+    if (res.ok) {
+      router.push("/admin/overview");
+    } else {
+      setError("訪客模式未啟用");
+    }
+  }
 
   useEffect(() => {
     if (isStaticExport) {
@@ -91,6 +103,17 @@ export default function LoginPage() {
             {loading ? "登入中..." : "登入"}
           </button>
         </form>
+        {isDemoMode && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              onClick={handleDemoLogin}
+              disabled={loading}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 rounded-lg text-sm transition disabled:opacity-50"
+            >
+              訪客模式（Demo）
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
