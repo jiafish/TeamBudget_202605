@@ -161,7 +161,7 @@ export async function runMonthlyAllocation(month: string): Promise<{
   skipped: number;
 }> {
   const users = await prisma.user.findMany({
-    where: { monthlyAllocation: { gt: 0 } },
+    where: { monthlyAllocation: { gt: 0 }, deletedAt: null },
   });
 
   let processed = 0;

@@ -8,14 +8,21 @@ TBD - created by archiving change 'team-budget-management-tool'. Update Purpose 
 
 ### Requirement: Member submits an expense record
 
-The system SHALL allow any authenticated user (MANAGER or MEMBER) to submit an expense record against their own account. An expense record SHALL include: amount (positive integer, in whole currency units), date (user-specified, not required to be today), description (non-empty string), and optionally a receipt image file. Upon submission, the system SHALL atomically deduct the amount from the user's balance.
+The system SHALL allow any authenticated user (MANAGER or MEMBER) to submit an expense record against their own account. An expense record SHALL include: amount (positive integer, in whole currency units), date (user-specified, not required to be today), description (non-empty string), and optionally a receipt image file. The system SHALL also accept an optional categoryId; if provided, it SHALL reference an existing Category or be rejected with 400 Bad Request. If categoryId is omitted or null, the record is stored with categoryId=null. Upon submission, the system SHALL atomically deduct the amount from the user's balance.
 
-#### Scenario: Successful expense submission
+#### Scenario: Successful expense submission without category
 
-- **WHEN** a user submits a valid expense record with amount=500, date, description, and an optional receipt
-- **THEN** the system creates an ExpenseRecord linked to the user
+- **WHEN** a user submits a valid expense record with amount=500, date, description, and no categoryId
+- **THEN** the system creates an ExpenseRecord with categoryId=null linked to the user
 - **THEN** the user's balance is decremented by 500 atomically
 - **THEN** the record appears in the user's monthly record list immediately
+
+#### Scenario: Successful expense submission with category
+
+- **WHEN** a user submits a valid expense record with amount=500, date, description, and a categoryId referencing an existing Category
+- **THEN** the system creates an ExpenseRecord linked to the user and the category
+- **THEN** the user's balance is decremented by 500 atomically
+- **THEN** the record appears in the user's monthly record list with the category name included
 
 #### Scenario: Expense exceeds balance
 
@@ -28,6 +35,45 @@ The system SHALL allow any authenticated user (MANAGER or MEMBER) to submit an e
 - **WHEN** a user submits an expense with amount=0 or a negative number
 - **THEN** the system rejects the request with a validation error
 - **THEN** no record is created and no balance change occurs
+
+#### Scenario: Expense submitted with a non-existent categoryId
+
+- **WHEN** a user submits an expense with a categoryId that does not match any existing Category
+- **THEN** the system returns 400 Bad Request
+- **THEN** no ExpenseRecord is created and no balance change occurs
+
+
+<!-- @trace
+source: expense-categories
+updated: 2026-05-05
+code:
+  - src/app/api/admin/summary/route.ts
+  - prisma/migrations/20260504144357_add_expense_categories/migration.sql
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260504120000_add_member_allocation_setting_log/migration.sql
+  - tsconfig.tsbuildinfo
+  - package.json
+  - scripts/gh-pages-build.cjs
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - next.config.ts
+  - src/app/login/page.tsx
+  - src/app/admin/members/page.tsx
+  - src/app/static-home.tsx
+  - prisma/schema.prisma
+  - src/app/api/member/budget-summary/route.ts
+  - src/app/api/member/reimbursements/route.ts
+  - prisma/migrations/20260505012240_add_user_soft_delete/migration.sql
+  - src/app/api/expenses/route.ts
+  - src/app/api/admin/members/[id]/route.ts
+  - src/lib/allocation.ts
+  - src/app/dashboard/page.tsx
+  - src/app/page.tsx
+  - .github/workflows/gh-pages.yml
+  - src/app/api/admin/members/[id]/allocation/route.ts
+-->
 
 ---
 ### Requirement: Receipt image upload

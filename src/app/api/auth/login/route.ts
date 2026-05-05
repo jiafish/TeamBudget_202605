@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "登入號碼或密碼錯誤" }, { status: 401 });
   }
 
+  if (user.deletedAt !== null) {
+    return NextResponse.json({ error: "帳號已停用" }, { status: 401 });
+  }
+
   const valid = await bcrypt.compare(String(body.password), user.passwordHash);
   if (!valid) {
     return NextResponse.json({ error: "登入號碼或密碼錯誤" }, { status: 401 });

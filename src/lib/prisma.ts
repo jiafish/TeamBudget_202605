@@ -11,6 +11,3 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
-// Enable WAL mode for better concurrent read performance and reduced locking
-prisma.$queryRawUnsafe("PRAGMA journal_mode=WAL").catch(() => {});

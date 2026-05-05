@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
   const [users, expenseByUser, expenseGrand, allocGrand, logSumByUser, supplementByUser] =
     await Promise.all([
       prisma.user.findMany({
+        where: { deletedAt: null },
         select: {
           id: true,
           name: true,
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
         _sum: { amount: true },
       }),
       prisma.expenseRecord.aggregate({ _sum: { amount: true } }),
-      prisma.user.aggregate({ _sum: { monthlyAllocation: true } }),
+      prisma.user.aggregate({ where: { deletedAt: null }, _sum: { monthlyAllocation: true } }),
       prisma.monthlyAllocationLog.groupBy({
         by: ["userId"],
         _sum: { amount: true },

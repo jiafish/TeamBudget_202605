@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -13,9 +13,10 @@ model User {
   passwordHash      String
   role              String   @default("MEMBER")
   name              String
-  monthlyAllocation Int      @default(0)
-  balance           Int      @default(0)
-  createdAt         DateTime @default(now())
+  monthlyAllocation Int       @default(0)
+  balance           Int       @default(0)
+  createdAt         DateTime  @default(now())
+  deletedAt         DateTime?
 
   expenses              ExpenseRecord[]
   monthlyAllocationLogs MonthlyAllocationLog[]

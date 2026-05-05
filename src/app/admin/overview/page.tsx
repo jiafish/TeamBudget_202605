@@ -108,8 +108,6 @@ function AdminOverviewRuntimePage() {
   const [aggregate, setAggregate] = useState<Aggregate | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [editAllocationId, setEditAllocationId] = useState<number | null>(null);
-  const [allocationInput, setAllocationInput] = useState("");
   const [reimbursements, setReimbursements] = useState<ReimbursementRow[]>([]);
   const [reimburseTarget, setReimburseTarget] = useState<SummaryMember | null>(
     null
@@ -125,12 +123,6 @@ function AdminOverviewRuntimePage() {
   const [manualNote, setManualNote] = useState("");
   const [manualError, setManualError] = useState("");
   const [manualSubmitting, setManualSubmitting] = useState(false);
-  const [allocationFeedback, setAllocationFeedback] = useState<string | null>(
-    null
-  );
-  const [allocationBackfillFrom, setAllocationBackfillFrom] = useState("");
-  const [allocationBackfillTo, setAllocationBackfillTo] = useState("");
-  const [allocationError, setAllocationError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [summaryLoadError, setSummaryLoadError] = useState<string | null>(
@@ -197,7 +189,7 @@ function AdminOverviewRuntimePage() {
     }
     if (reimbRes.ok) setReimbursements(await reimbRes.json());
     setLoading(false);
-  }, [month, router]);
+  }, [month, router, categoryFilter]);
 
   useEffect(() => {
     setLoading(true);
@@ -210,53 +202,6 @@ function AdminOverviewRuntimePage() {
       .then(setCategories)
       .catch(() => {});
   }, []);
-
-  async function handleSetAllocation(e: React.FormEvent) {
-    e.preventDefault();
-    if (editAllocationId === null) return;
-    const from = allocationBackfillFrom.trim();
-    const to = allocationBackfillTo.trim();
-    if ((from && !to) || (!from && to)) {
-      setAllocationError("分配起月與分配迄月須一併填寫，或兩者皆留空。");
-      return;
-    }
-    const payload: Record<string, unknown> = {
-      monthlyAllocation: parseInt(allocationInput, 10),
-    };
-    if (from && to) {
-      payload.backfillFromMonth = from;
-      payload.backfillToMonth = to;
-    }
-    const res = await fetch(`/api/admin/members/${editAllocationId}/allocation`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const d = await res.json().catch(() => ({}));
-      if (
-        typeof d.backfilledMonths === "number" &&
-        d.backfilledMonths > 0
-      ) {
-        setAllocationFeedback(
-          `已補齊 ${d.backfilledMonths} 個缺漏月配入帳（成員餘額已同步增加）。`
-        );
-      } else {
-        setAllocationFeedback(null);
-      }
-      setEditAllocationId(null);
-      setAllocationInput("");
-      setAllocationBackfillFrom("");
-      setAllocationBackfillTo("");
-      setAllocationError(null);
-      fetchData();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setAllocationError(
-        typeof err?.error === "string" ? err.error : "儲存失敗，請稍後再試。"
-      );
-    }
-  }
 
   async function openReceipt(recordId: number) {
     const res = await fetch(`/api/expenses/${recordId}/receipt`);
@@ -372,18 +317,6 @@ function AdminOverviewRuntimePage() {
       <AdminHeader />
 
       <div className="max-w-5xl mx-auto p-6 space-y-6">
-        {allocationFeedback ? (
-          <div className="flex items-start justify-between gap-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-            <span>{allocationFeedback}</span>
-            <button
-              type="button"
-              onClick={() => setAllocationFeedback(null)}
-              className="shrink-0 text-emerald-600 hover:underline"
-            >
-              關閉
-            </button>
-          </div>
-        ) : null}
         {summaryLoadError ? (
           <div className="flex items-start justify-between gap-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             <span>{summaryLoadError}</span>
@@ -487,19 +420,6 @@ function AdminOverviewRuntimePage() {
                         {openAllocationAudits.has(m.id)
                           ? "收合稽核"
                           : "稽核紀錄"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditAllocationId(m.id);
-                          setAllocationInput(String(m.monthlyAllocation));
-                          setAllocationBackfillFrom("");
-                          setAllocationBackfillTo("");
-                          setAllocationError(null);
-                        }}
-                        className="text-blue-600 hover:underline text-xs mr-2"
-                      >
-                        設定分配
                       </button>
                       {m.role === "MEMBER" &&
                         Number(m.displayRemaining) < 0 && (
@@ -872,80 +792,6 @@ function AdminOverviewRuntimePage() {
                 <button
                   type="button"
                   onClick={() => setReimburseTarget(null)}
-                  className="flex-1 border border-gray-300 py-2 rounded-lg text-sm text-gray-600"
-                >
-                  取消
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Set allocation modal */}
-      {editAllocationId !== null && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="font-semibold text-gray-800 mb-1">設定月分配金額</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              此為每月發給該成員之額度（非「月配入帳加總」）；儲存後會依起迄或預設規則補齊缺漏月份的入帳紀錄。
-            </p>
-            <form onSubmit={handleSetAllocation} className="space-y-3">
-              <input
-                type="number"
-                value={allocationInput}
-                onChange={(e) => setAllocationInput(e.target.value)}
-                min="0"
-                step="1"
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                placeholder="輸入金額（元）"
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    分配起月（選填）
-                  </label>
-                  <input
-                    type="month"
-                    value={allocationBackfillFrom}
-                    onChange={(e) => setAllocationBackfillFrom(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    分配迄月（選填）
-                  </label>
-                  <input
-                    type="month"
-                    value={allocationBackfillTo}
-                    onChange={(e) => setAllocationBackfillTo(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-gray-500">
-                僅在起迄皆選定時才限制補帳區間；留空則自帳號建立月至本月補齊缺漏月配。
-              </p>
-              {allocationError && (
-                <p className="text-red-500 text-sm">{allocationError}</p>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm"
-                >
-                  確認
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditAllocationId(null);
-                    setAllocationBackfillFrom("");
-                    setAllocationBackfillTo("");
-                    setAllocationError(null);
-                  }}
                   className="flex-1 border border-gray-300 py-2 rounded-lg text-sm text-gray-600"
                 >
                   取消

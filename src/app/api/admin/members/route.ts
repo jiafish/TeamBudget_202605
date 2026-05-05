@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   const members = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
