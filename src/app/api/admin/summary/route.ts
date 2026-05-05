@@ -13,6 +13,36 @@ type MemberAllocationSettingLogWithManager = Prisma.MemberAllocationSettingLogGe
   typeof allocationLogWithManager
 >;
 
+const DEMO_SUMMARY = {
+  members: [
+    {
+      id: 1, name: "王小明", loginNumber: "admin", role: "MANAGER",
+      monthlyAllocation: 3000, balance: 1200,
+      totalExpense: 1800, displayRemaining: 1200,
+      allocationLogSumLifetime: 9000, allocationSettingHistory: [],
+    },
+    {
+      id: 2, name: "陳美玲", loginNumber: "member01", role: "MEMBER",
+      monthlyAllocation: 2000, balance: 800,
+      totalExpense: 1200, displayRemaining: 800,
+      allocationLogSumLifetime: 6000, allocationSettingHistory: [],
+    },
+    {
+      id: 3, name: "李建宏", loginNumber: "member02", role: "MEMBER",
+      monthlyAllocation: 2000, balance: 1500,
+      totalExpense: 500, displayRemaining: 1500,
+      allocationLogSumLifetime: 6000, allocationSettingHistory: [],
+    },
+  ],
+  totals: {
+    sumMonthlyAllocation: 7000,
+    sumTotalExpense: 3500,
+    teamDisplayRemaining: 3500,
+    sumAllocationLogs: 21000,
+    sumSupplementCredits: 0,
+  },
+};
+
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req);
   if (!session) {
@@ -20,6 +50,10 @@ export async function GET(req: NextRequest) {
   }
   if (!requireRole(session, "MANAGER")) {
     return NextResponse.json({ error: "禁止存取" }, { status: 403 });
+  }
+
+  if (process.env.DEMO_MODE === "true") {
+    return NextResponse.json(DEMO_SUMMARY);
   }
 
   const [users, expenseByUser, expenseGrand, allocGrand, logSumByUser, supplementByUser] =

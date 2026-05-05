@@ -24,19 +24,31 @@ The system SHALL provide a MANAGER with a paginated, month-filterable list of al
 ---
 ### Requirement: Manager views per-member balance summary
 
-The system SHALL provide a MANAGER with a summary of every user account showing each user's name, `monthlyAllocation`, and a **displayed remaining amount** computed as the sum of that user's `MonthlyAllocationLog.amount` values plus the sum of `creditAmount` for `ReimbursementDecision` rows where `targetUserId` equals that user's id and `reimbursed` is true, minus the sum of `ExpenseRecord.amount` across all expense rows whose `userId` equals that user's id (lifetime total expenses for that user). The summary SHALL NOT use `User.balance` as the source of truth for the displayed remaining amount column.
+The system SHALL provide a MANAGER with a summary of every non-deleted user account (i.e. accounts whose `deletedAt` is null) showing each user's name, `monthlyAllocation`, and a **displayed remaining amount** computed as the sum of that user's `MonthlyAllocationLog.amount` values plus the sum of `creditAmount` for `ReimbursementDecision` rows where `targetUserId` equals that user's id and `reimbursed` is true, minus the sum of `ExpenseRecord.amount` across all expense rows whose `userId` equals that user's id (lifetime total expenses for that user). The summary SHALL NOT use `User.balance` as the source of truth for the displayed remaining amount column.
+
+The balance summary table SHALL NOT include a per-row "set allocation" action. Allocation management is performed exclusively from the members management page.
+
+#### Scenario: Balance summary table excludes deleted members
+
+- **WHEN** a MANAGER views the balance summary
+- **THEN** only non-deleted members (whose `deletedAt` is null) appear in the table
 
 #### Scenario: Balance summary table uses formula
 
-- **WHEN** a MANAGER views the overview page
-- **THEN** a summary table lists every user with their name, monthly allocation, and displayed remaining amount equal to the user's summed allocation logs plus summed reimbursed supplement credits minus the user's lifetime summed expenses
-- **THEN** rows whose displayed remaining amount is strictly less than zero are visually distinguished (e.g., highlighted in red)
+- **WHEN** the MANAGER views the balance summary table
+- **THEN** the displayed remaining amount for each user equals the sum of their `MonthlyAllocationLog` amounts plus credited reimbursements minus lifetime expenses
+- **THEN** the table does not show a "set allocation" action per row
 
-##### Example: displayed remaining per member
+##### Example: displayed remaining calculation
 
-- **GIVEN** user U1 has `MonthlyAllocationLog` amounts summing to 5000, reimbursed supplement credits summing to 0, and expense sums 3200; user U2 has allocation log amounts summing to 2000, reimbursed supplement credits summing to 0, and expense sums 4000
-- **WHEN** a MANAGER views the balance summary
-- **THEN** U1's displayed remaining amount is 1800 and U2's displayed remaining amount is -2000
+- **GIVEN** member A has `MonthlyAllocationLog` amounts summing to 15000, reimbursements with `reimbursed=true` and `creditAmount` summing to 2000, and total `ExpenseRecord.amount` summing to 8000
+- **WHEN** the balance summary is rendered
+- **THEN** member A's displayed remaining amount is 9000 (15000 + 2000 − 8000)
+
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-04
+-->
 
 ---
 ### Requirement: Manager views aggregate expense statistics

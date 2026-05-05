@@ -3,10 +3,20 @@ import bcrypt from "bcryptjs";
 import { getSessionFromRequest, requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const DEMO_MEMBERS = [
+  { id: 1, name: "王小明", loginNumber: "admin", role: "MANAGER", monthlyAllocation: 3000, balance: 1200 },
+  { id: 2, name: "陳美玲", loginNumber: "member01", role: "MEMBER", monthlyAllocation: 2000, balance: 800 },
+  { id: 3, name: "李建宏", loginNumber: "member02", role: "MEMBER", monthlyAllocation: 2000, balance: 1500 },
+];
+
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req);
   if (!requireRole(session, "MANAGER")) {
     return NextResponse.json({ error: "禁止存取" }, { status: 403 });
+  }
+
+  if (process.env.DEMO_MODE === "true") {
+    return NextResponse.json(DEMO_MEMBERS);
   }
 
   const members = await prisma.user.findMany({

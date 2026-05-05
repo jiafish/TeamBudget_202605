@@ -8,11 +8,11 @@ TBD - created by archiving change 'team-budget-management-tool'. Update Purpose 
 
 ### Requirement: Login with number and password
 
-The system SHALL authenticate users by verifying a login number and password combination. On successful authentication, the system SHALL issue a session token stored as an httpOnly, Secure, SameSite=Strict cookie with a 7-day expiry.
+The system SHALL authenticate users by verifying a login number and password combination. On successful authentication, the system SHALL issue a session token stored as an httpOnly, Secure, SameSite=Strict cookie with a 7-day expiry. The system SHALL additionally check whether the matching user account has a non-null `deletedAt` field; if so, the system SHALL return HTTP 401 with the error message "帳號已停用" and SHALL NOT set a session cookie, regardless of whether the credentials are correct.
 
 #### Scenario: Successful login
 
-- **WHEN** a user submits a valid login number and matching password
+- **WHEN** a user submits a valid login number and matching password for an account whose `deletedAt` is null
 - **THEN** the system sets a session cookie and redirects to the user's home page based on their role
 
 #### Scenario: Invalid credentials
@@ -21,10 +21,21 @@ The system SHALL authenticate users by verifying a login number and password com
 - **THEN** the system returns an error message "登入號碼或密碼錯誤" without indicating which field is wrong
 - **THEN** no session cookie is set
 
+#### Scenario: Deleted account login blocked
+
+- **WHEN** a user submits a valid login number and matching password for an account whose `deletedAt` is non-null
+- **THEN** the system returns HTTP 401 with the error message "帳號已停用"
+- **THEN** no session cookie is set
+
 #### Scenario: Session expiry
 
 - **WHEN** a user's session cookie has expired or is missing
 - **THEN** any access to a protected page redirects the user to the login page
+
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-04
+-->
 
 ---
 ### Requirement: Role-based access control
@@ -56,32 +67,36 @@ The system SHALL allow a MANAGER to create new user accounts by specifying a nam
 ---
 ### Requirement: Manager views and manages member accounts
 
-The system SHALL allow a MANAGER to view all member accounts, **delete** a member account using an authenticated manager-only delete API, and **reset passwords** for any account including accounts whose `role` is `MANAGER`. Password resets SHALL update the stored password hash for the target user. Account deletion SHALL remove the user and dependent records according to the project's schema using either database cascade rules or explicit transactional deletes so that no constraint violations remain. The system SHALL reject a delete request with HTTP 400 when the target user id equals the authenticated manager's user id, and SHALL reject a delete request with HTTP 400 when the target is the only remaining user with `MANAGER` role in the system.
+The system SHALL allow a MANAGER to view all non-deleted member accounts (i.e. accounts whose `deletedAt` is null), soft-delete a member account using an authenticated manager-only delete API, and reset passwords for any account including accounts whose `role` is `MANAGER` and the manager's own account. Password resets SHALL update the stored password hash for the target user. Account deletion SHALL set the target user's `deletedAt` field to the current server timestamp; all associated historical records SHALL be preserved. The system SHALL reject a delete request with HTTP 400 when the target user id equals the authenticated manager's user id. The system SHALL reject a delete request with HTTP 400 when the target is the only remaining non-deleted user with `MANAGER` role in the system.
 
-#### Scenario: Password reset by manager applies to manager role
+#### Scenario: View member list excludes deleted accounts
 
-- **GIVEN** user U has role `MANAGER` and a valid MANAGER session exists for acting manager A where A's user id is not equal to U's user id
-- **WHEN** acting manager A submits a valid password reset for user U
-- **THEN** user U's password hash is updated to the new value
+- **WHEN** a MANAGER fetches the member list
+- **THEN** only accounts whose `deletedAt` is null are returned
 
-#### Scenario: Delete member succeeds when another manager exists
+#### Scenario: Soft-delete a member
 
-- **GIVEN** member M is not the acting manager, the acting manager is a MANAGER, and at least one other `MANAGER` user exists besides M when M is a manager
-- **WHEN** the acting manager confirms deletion of M via the delete API
-- **THEN** member M's user row no longer exists and dependent rows are removed or updated per schema rules without leaving orphan rows that violate database constraints
+- **WHEN** a MANAGER sends a delete request for a valid member id that is not the manager's own id and is not the only remaining manager
+- **THEN** the system sets `deletedAt` on that user and returns HTTP 200
+- **THEN** the member no longer appears in the member list
+
+#### Scenario: Reset password for any role
+
+- **WHEN** a MANAGER submits a password reset request for any user id, including a MANAGER-role account or the manager's own account
+- **THEN** the system updates the target account's password hash
+- **THEN** the system returns HTTP 200
 
 #### Scenario: Reject delete last manager
 
-- **GIVEN** user U is the only user in the system with `MANAGER` role
+- **GIVEN** user U is the only non-deleted user in the system with `MANAGER` role
 - **WHEN** a MANAGER invokes the delete API targeting U
-- **THEN** the API responds with HTTP 400 and user U remains
+- **THEN** the API responds with HTTP 400 and user U's `deletedAt` remains unchanged
 
 #### Scenario: Reject delete self
 
 - **GIVEN** the authenticated MANAGER's user id equals the delete target user id
 - **WHEN** the delete API is invoked
 - **THEN** the API responds with HTTP 400 and no deletion occurs
-
 
 <!-- @trace
 source: monthly-allocation-audit-ui
@@ -97,6 +112,11 @@ code:
   - prisma/schema.prisma
   - tsconfig.tsbuildinfo
   - src/app/api/member/reimbursements/route.ts
+-->
+
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-04
 -->
 
 ---

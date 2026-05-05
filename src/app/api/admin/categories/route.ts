@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest, requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const DEMO_CATEGORIES = [
+  { id: 1, name: "餐費" },
+  { id: 2, name: "交通費" },
+  { id: 3, name: "辦公用品" },
+];
+
 export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req);
   if (!session) {
     return NextResponse.json({ error: "未登入" }, { status: 401 });
+  }
+
+  if (process.env.DEMO_MODE === "true") {
+    return NextResponse.json(DEMO_CATEGORIES);
   }
 
   const categories = await prisma.category.findMany({

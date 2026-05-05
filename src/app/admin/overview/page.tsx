@@ -147,7 +147,16 @@ function AdminOverviewRuntimePage() {
       expensesRes.status === 401 ||
       reimbRes.status === 401
     ) {
-      router.push("/login");
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+        const demoRes = await fetch("/api/auth/demo-login", { method: "POST" });
+        if (demoRes.ok) {
+          window.location.reload();
+        } else {
+          router.push("/login");
+        }
+      } else {
+        router.push("/login");
+      }
       return;
     }
 

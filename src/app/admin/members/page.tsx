@@ -359,6 +359,50 @@ export default function MembersPage() {
             </table>
           )}
         </section>
+        {/* 支出類別管理 */}
+        <section className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">支出類別管理</h2>
+          <form onSubmit={handleCreateCategory} className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="新類別名稱"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              新增
+            </button>
+          </form>
+          {categoryError && (
+            <p className="text-red-500 text-sm mb-3">{categoryError}</p>
+          )}
+          {categories.length === 0 ? (
+            <p className="text-gray-400 text-sm">尚無類別，請先新增</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full"
+                >
+                  {c.name}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(c.id)}
+                    className="text-gray-400 hover:text-red-500 text-xs leading-none"
+                    title="刪除類別"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {/* 重設密碼 Modal */}

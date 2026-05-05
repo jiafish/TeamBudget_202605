@@ -37,6 +37,8 @@ npm run dev
 | `DATABASE_URL` | SQLite 資料庫路徑，例如 `file:./dev.db?connection_limit=1` |
 | `JWT_SECRET` | JWT 簽名金鑰，生產環境請使用隨機長字串 |
 | `CRON_SECRET` | Cron 端點保護金鑰 |
+| `DEMO_MODE` | 設為 `true` 啟用展示模式（伺服器端）：跳過登入頁、所有 admin API 回傳靜態 mock 資料，不需資料庫 |
+| `NEXT_PUBLIC_DEMO_MODE` | 設為 `true` 啟用展示模式（客戶端）：admin 頁面偵測到未登入時自動取得 demo session，須與 `DEMO_MODE` 同時設定 |
 
 ## VPS 部署
 
