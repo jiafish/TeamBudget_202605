@@ -32,24 +32,42 @@ The members management page SHALL display the allocation setting action per memb
 
 
 <!-- @trace
-source: monthly-allocation-audit-ui
-updated: 2026-05-04
-code:
-  - src/lib/allocation.ts
-  - prisma/migrations/20260504120000_add_member_allocation_setting_log/migration.sql
-  - src/app/dashboard/page.tsx
-  - src/app/admin/overview/page.tsx
-  - src/app/api/admin/summary/route.ts
-  - src/app/api/member/budget-summary/route.ts
-  - src/app/api/admin/members/[id]/allocation/route.ts
-  - prisma/schema.prisma
-  - tsconfig.tsbuildinfo
-  - src/app/api/member/reimbursements/route.ts
--->
-
-<!-- @trace
 source: member-management-enhancement
-updated: 2026-05-04
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
 -->
 
 ---
@@ -233,4 +251,43 @@ The system SHALL provide a `GET /api/admin/members/:id/allocation-history` endpo
 <!-- @trace
 source: member-management-enhancement
 updated: 2026-05-04
+-->
+
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
 -->

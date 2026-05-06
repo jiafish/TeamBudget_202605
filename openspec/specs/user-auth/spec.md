@@ -32,9 +32,44 @@ The system SHALL authenticate users by verifying a login number and password com
 - **WHEN** a user's session cookie has expired or is missing
 - **THEN** any access to a protected page redirects the user to the login page
 
+
 <!-- @trace
 source: member-management-enhancement
-updated: 2026-05-04
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
 -->
 
 ---
@@ -86,37 +121,44 @@ The system SHALL allow a MANAGER to view all non-deleted member accounts (i.e. a
 - **THEN** the system updates the target account's password hash
 - **THEN** the system returns HTTP 200
 
-#### Scenario: Reject delete last manager
-
-- **GIVEN** user U is the only non-deleted user in the system with `MANAGER` role
-- **WHEN** a MANAGER invokes the delete API targeting U
-- **THEN** the API responds with HTTP 400 and user U's `deletedAt` remains unchanged
-
-#### Scenario: Reject delete self
-
-- **GIVEN** the authenticated MANAGER's user id equals the delete target user id
-- **WHEN** the delete API is invoked
-- **THEN** the API responds with HTTP 400 and no deletion occurs
-
-<!-- @trace
-source: monthly-allocation-audit-ui
-updated: 2026-05-04
-code:
-  - src/lib/allocation.ts
-  - prisma/migrations/20260504120000_add_member_allocation_setting_log/migration.sql
-  - src/app/dashboard/page.tsx
-  - src/app/admin/overview/page.tsx
-  - src/app/api/admin/summary/route.ts
-  - src/app/api/member/budget-summary/route.ts
-  - src/app/api/admin/members/[id]/allocation/route.ts
-  - prisma/schema.prisma
-  - tsconfig.tsbuildinfo
-  - src/app/api/member/reimbursements/route.ts
--->
 
 <!-- @trace
 source: member-management-enhancement
-updated: 2026-05-04
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
 -->
 
 ---
@@ -133,3 +175,47 @@ The system SHALL allow any authenticated user to change their own password by pr
 
 - **WHEN** a user submits an incorrect current password
 - **THEN** the system rejects the request with an error and does not change the password
+
+---
+### Requirement: Demo mode identity switch login
+
+The system SHALL display, when `DEMO_MODE=true`, two buttons on the login page — "管理員登入" and "成員登入" — instead of the username/password form. Clicking "管理員登入" SHALL POST `{ role: "MANAGER" }` to `/api/auth/demo-login` and redirect to `/dashboard` on success. Clicking "成員登入" SHALL POST `{ role: "MEMBER" }` to `/api/auth/demo-login` and redirect to the member dashboard on success. The `/api/auth/demo-login` endpoint SHALL accept a `role` field in the request body (`"MANAGER"` or `"MEMBER"`), issue a JWT with `{ userId: 0, role: "MANAGER" }` or `{ userId: 1, role: "MEMBER" }` respectively, set the session cookie (httpOnly, Secure in production, SameSite=Strict, 1-hour expiry), and return `{ ok: true, role }`. When `DEMO_MODE` is not `"true"`, the endpoint SHALL return HTTP 403.
+
+#### Scenario: Demo login as MANAGER
+
+- **WHEN** `DEMO_MODE=true` and the user clicks "管理員登入" on the login page
+- **THEN** a session cookie is set with JWT payload `{ userId: 0, role: "MANAGER" }` and the user is redirected to `/dashboard`
+
+#### Scenario: Demo login as MEMBER
+
+- **WHEN** `DEMO_MODE=true` and the user clicks "成員登入" on the login page
+- **THEN** a session cookie is set with JWT payload `{ userId: 1, role: "MEMBER" }` and the user is redirected to the member dashboard
+
+#### Scenario: Normal login form shown when DEMO_MODE is not true
+
+- **WHEN** `DEMO_MODE` is absent or not `"true"` and the user visits `/login`
+- **THEN** the username/password form is displayed as normal
+
+<!-- @trace
+source: add-demo-mode
+updated: 2026-05-06
+code:
+  - src/app/login/page.tsx
+  - src/app/api/auth/demo-login/route.ts
+-->
+
+<!-- @trace
+source: add-demo-mode
+updated: 2026-05-06
+code:
+  - next-env.d.ts
+  - src/lib/demo-data.ts
+  - src/lib/prisma.ts
+  - src/middleware.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/proxy.ts
+  - src/app/api/expenses/route.ts
+  - src/app/login/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/app/api/member/reimbursements/route.ts
+-->

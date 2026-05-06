@@ -12,12 +12,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleDemoLogin() {
+  async function handleDemoLogin(role: "MANAGER" | "MEMBER") {
     setLoading(true);
-    const res = await fetch("/api/auth/demo-login", { method: "POST" });
+    setError("");
+    const res = await fetch("/api/auth/demo-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
     setLoading(false);
     if (res.ok) {
-      router.push("/admin/overview");
+      router.push(role === "MANAGER" ? "/admin/overview" : "/dashboard");
     } else {
       setError("訪客模式未啟用");
     }
@@ -65,54 +70,69 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
           團隊經費管理
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              登入號碼
-            </label>
-            <input
-              type="text"
-              value={loginNumber}
-              onChange={(e) => setLoginNumber(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="請輸入登入號碼"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              密碼
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="請輸入密碼"
-            />
-          </div>
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition disabled:opacity-50"
-          >
-            {loading ? "登入中..." : "登入"}
-          </button>
-        </form>
-        {isDemoMode && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+
+        {isDemoMode ? (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500 text-center mb-4">
+              展示模式 — 請選擇身份
+            </p>
             <button
-              onClick={handleDemoLogin}
+              onClick={() => handleDemoLogin("MANAGER")}
               disabled={loading}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 rounded-lg text-sm transition disabled:opacity-50"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg text-sm transition disabled:opacity-50"
             >
-              訪客模式（Demo）
+              {loading ? "登入中..." : "管理員登入"}
             </button>
+            <button
+              onClick={() => handleDemoLogin("MEMBER")}
+              disabled={loading}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 rounded-lg text-sm transition disabled:opacity-50"
+            >
+              {loading ? "登入中..." : "成員登入"}
+            </button>
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                登入號碼
+              </label>
+              <input
+                type="text"
+                value={loginNumber}
+                onChange={(e) => setLoginNumber(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="請輸入登入號碼"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                密碼
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="請輸入密碼"
+              />
+            </div>
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition disabled:opacity-50"
+            >
+              {loading ? "登入中..." : "登入"}
+            </button>
+          </form>
         )}
       </div>
     </div>

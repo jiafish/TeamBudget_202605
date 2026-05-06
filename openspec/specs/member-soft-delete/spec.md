@@ -44,8 +44,47 @@ The system SHALL allow a MANAGER to soft-delete any user account by setting its 
 - **WHEN** a MANAGER fetches the admin summary
 - **THEN** the response does not include users whose `deletedAt` is non-null in the members list or team totals
 
----
 
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
+-->
+
+---
 ### Requirement: Soft-deleted account is blocked from login
 
 The system SHALL reject login attempts from a user account whose `deletedAt` field is non-null. The system SHALL return HTTP 401 with the error message "帳號已停用" and SHALL NOT set a session cookie.
@@ -59,4 +98,43 @@ The system SHALL reject login attempts from a user account whose `deletedAt` fie
 <!-- @trace
 source: member-management-enhancement
 updated: 2026-05-04
+-->
+
+<!-- @trace
+source: member-management-enhancement
+updated: 2026-05-05
+code:
+  - src/lib/prisma.ts
+  - src/app/api/admin/summary/route.ts
+  - package.json
+  - src/app/api/admin/categories/route.ts
+  - src/app/api/admin/expenses/route.ts
+  - README.md
+  - prisma/migrations/migration_lock.toml
+  - src/app/api/expenses/route.ts
+  - src/app/components/ExpenseForm.tsx
+  - src/app/api/admin/categories/[id]/route.ts
+  - src/app/api/auth/demo-login/route.ts
+  - src/app/dashboard/page.tsx
+  - src/app/api/member/budget-summary/route.ts
+  - src/lib/allocation.ts
+  - src/app/admin/members/page.tsx
+  - tsconfig.tsbuildinfo
+  - prisma/migrations/20260503150439_init/migration.sql
+  - scripts/gh-pages-build.cjs
+  - src/app/static-home.tsx
+  - src/app/api/member/reimbursements/route.ts
+  - src/app/admin/overview/page.tsx
+  - prisma/migrations/20260503161647_add_reimbursement_decision/migration.sql
+  - src/app/api/admin/members/route.ts
+  - src/app/api/auth/login/route.ts
+  - src/app/page.tsx
+  - next.config.ts
+  - src/app/api/admin/reimbursements/route.ts
+  - src/app/api/admin/members/[id]/allocation-history/route.ts
+  - src/app/api/admin/members/[id]/allocation/route.ts
+  - .github/workflows/gh-pages.yml
+  - prisma/schema.prisma
+  - src/app/api/admin/members/[id]/route.ts
+  - src/app/login/page.tsx
 -->

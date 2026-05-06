@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { getSessionFromRequest, requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DEMO_BUDGET_SUMMARY } from "@/lib/demo-data";
 
 /** Returned monthlyAllocation is the monthly stipend (per-month rate). totalAllocatedFromLogs is the lifetime sum of MonthlyAllocationLog.amount. */
 
@@ -23,6 +24,10 @@ export async function GET(req: NextRequest) {
   }
 
   const userId = session.userId;
+
+  if (process.env.DEMO_MODE === "true") {
+    return NextResponse.json(DEMO_BUDGET_SUMMARY);
+  }
 
   const [user, logSum, expenseSum, supplementSum] = await Promise.all([
     prisma.user.findUnique({

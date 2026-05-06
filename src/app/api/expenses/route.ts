@@ -4,6 +4,7 @@ import path from "path";
 import { randomBytes } from "crypto";
 import { getSessionFromRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DEMO_EXPENSES } from "@/lib/demo-data";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -44,6 +45,16 @@ export async function GET(req: NextRequest) {
   const start = new Date(year, mon - 1, 1);
   const end = new Date(year, mon, 1);
 
+  if (process.env.DEMO_MODE === "true") {
+    const records = DEMO_EXPENSES.filter(
+      (e) =>
+        e.userId === requestedUserId &&
+        e.date >= start &&
+        e.date < end
+    );
+    return NextResponse.json(records);
+  }
+
   const records = await prisma.expenseRecord.findMany({
     where: {
       userId: requestedUserId,
@@ -70,6 +81,10 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req);
   if (!session) {
     return NextResponse.json({ error: "未登入" }, { status: 401 });
+  }
+
+  if (process.env.DEMO_MODE === "true") {
+    return NextResponse.json({ ok: true, demo: true });
   }
 
   const contentType = req.headers.get("content-type") ?? "";
